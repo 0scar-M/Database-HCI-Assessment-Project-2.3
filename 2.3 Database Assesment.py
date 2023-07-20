@@ -4,7 +4,9 @@ import os
 def valid_input(prompt, error_prompt, type_, values):
     while True:
         try:
-            input_ = type_(input(prompt))
+            input_ = input(prompt)
+            if input_ == "exit": exit()
+            input_ = type_(input_)
             if input_ not in values: raise
             break
         except Exception:
