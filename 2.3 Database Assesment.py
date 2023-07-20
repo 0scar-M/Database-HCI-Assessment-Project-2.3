@@ -19,26 +19,43 @@ def valid_input(prompt, error_prompt, type_, *values):
             print(error_prompt)
     return input_
 
-def results():
-    pass
-
-def add_participation():
+def get_events_groups():
     """
-    Adds participations to the database for certain events and groups.
+    Gets the name field from the events table and house+' '+gender from the groups table.
+    Runs everytime the user modifies or reads the database.
     """
     global events, groups
     events = [x[0] for x in cursor.execute("SELECT name FROM events ORDER BY id;").fetchall()]
     groups = [x[0] for x in cursor.execute("SELECT house||\' \'||gender FROM groups ORDER BY id;").fetchall()]
+
+def format_list(list_):
+    "Formats lists from ['a', 'b', 'c'] to a, b, c"
+    return ', '.join(list_).title()
+
+def results():
+    pass
+
+def add_participation():
+    "Adds participations to the database for certain events and groups."
+    get_events_groups()
     
-    event_id = events.index(valid_input("Enter the event that you want to add a participation for: ", f"Make sure that you have entered one of these events: {', '.join(events).title()}", str, events))+1
-    group_id = groups.index(valid_input("Enter the group that you want to add a participation for: ", f"Make sure that you have entered one of these groups: {', '.join(groups).title()}", str, groups))+1
-    avg_score = valid_input(f"Enter the average score for {groups[group_id-1]}: ", "Please make sure that you entered a valid number.", float)
+    event_id = events.index(valid_input("Enter the event that you want to add a participation for: ", f"Make sure that you have entered one of these events: {format_list(events)}", str, events))+1
+    group_id = groups.index(valid_input("Enter the group that you want to add a participation for: ", f"Make sure that you have entered one of these groups: {format_list(groups)}", str, groups))+1
+    avg_score = valid_input(f"Enter the average score for {groups[group_id-1]}: ", "Please make sure that you entered a valid number.", float, "True")
     
     cursor.execute("INSERT INTO participations VALUES (?, ?, ?);", (event_id, group_id, avg_score))
     conn.commit()
 
 def edit_participation():
-    pass
+    "Edits participations in the database for certain events and groups."
+    get_events_groups()
+
+    event_id = events.index(valid_input("What event do you want to change a participation for? ", f"Make sure that you have entered one of these events: {format_list(events)}", str, events))+1
+    group_id = groups.index(valid_input("What group do you want to change a participation for? ", f"Make sure that you have entered one of these groups: {format_list(groups)}", str, groups))+1
+    avg_score = valid_input(f"Enter the new average score for {groups[group_id-1]}: ", "Please make sure that you entered a valid number.", float)
+    
+    cursor.execute("UPDATE participations SET event_id = ?, group_id = ?, avg_score = ? WHERE event_id = ? AND group_id = ?;", (event_id, group_id, avg_score, event_id, group_id))
+    conn.commit()
 
 def remove_participation():
     pass
