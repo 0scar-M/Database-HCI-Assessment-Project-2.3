@@ -3,6 +3,9 @@ import sqlite3 as sql
 def valid_input():
     pass
 
+def results():
+    pass
+
 def add_participation():
     pass
 
@@ -14,7 +17,6 @@ def remove_participation():
 
 if __name__ == "__main__":
     DATABASE = r"Database file path"
-    exit = False
 
     with sql.connect(DATABASE) as conn:
         cursor = conn.cursor()
@@ -22,17 +24,16 @@ if __name__ == "__main__":
 
         while True:
             while True:
-                action = str(input("Input prompt")).lower()
-                if action == "exit":
-                    exit = True
+                action = valid_input()
+                if action == "results":
+                    results()
                     break
                 elif action == "add":
                     add_participation()
                     break
-                elif action =="edit":
+                elif action == "edit":
                     edit_participation()
                     break
-                elif action =="remove":
+                elif action == "remove":
                     remove_participation()
                     break
-            if exit: break
