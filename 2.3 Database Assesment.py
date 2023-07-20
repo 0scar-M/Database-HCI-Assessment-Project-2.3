@@ -36,10 +36,10 @@ def results():
     pass
 
 def add_participation():
-    "Adds participations to the database for certain events and groups."
+    "Adds a participation for a certain event and group to the participations table in the database."
     get_events_groups()
     
-    event_id = events.index(valid_input("Enter the event that you want to add a participation for: ", f"Make sure that you have entered one of these events: {format_list(events)}", str, events))+1
+    event_id = events.index(valid_input("Enter the event that you want to add a participation for: ", f"Make sure that you have entered one of these events: {format_list(events)}", str, events))+1 # add one because SQL PKs start at 1 not 0 like Python lists.
     group_id = groups.index(valid_input("Enter the group that you want to add a participation for: ", f"Make sure that you have entered one of these groups: {format_list(groups)}", str, groups))+1
     avg_score = valid_input(f"Enter the average score for {groups[group_id-1]}: ", "Please make sure that you entered a valid number.", float, "True")
     
@@ -47,7 +47,7 @@ def add_participation():
     conn.commit()
 
 def edit_participation():
-    "Edits participations in the database for certain events and groups."
+    "Edits a participation for a certain event and group in the participations table in the database."
     get_events_groups()
 
     event_id = events.index(valid_input("What event do you want to change a participation for? ", f"Make sure that you have entered one of these events: {format_list(events)}", str, events))+1
@@ -58,7 +58,14 @@ def edit_participation():
     conn.commit()
 
 def remove_participation():
-    pass
+    "Removes a participation for a certain event and group from the participations table in the database."
+    get_events_groups()
+
+    event_id = events.index(valid_input("What event do you want to remove a participation for? ", f"Make sure that you have entered one of these events: {format_list(events)}", str, events))+1
+    group_id = groups.index(valid_input("What group do you want to remove a participation for? ", f"Make sure that you have entered one of these groups: {format_list(groups)}", str, groups))+1
+    
+    cursor.execute("DELETE FROM participations WHERE event_id = ? AND group_id = ?;", (event_id, group_id))
+    conn.commit()
 
 if __name__ == "__main__":
     DATABASE = os.path.join(os.path.dirname(__file__), r"participation day.db")
