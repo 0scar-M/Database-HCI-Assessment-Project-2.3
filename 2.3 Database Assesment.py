@@ -10,12 +10,12 @@ def valid_input(prompt, error_prompt, type_, *values):
     while True:
         try:
             input_ = input(prompt)
-            if input_ == "exit": exit()
+            if input_ == "exit": exit() # check for exit input before type_(input_) so that if they entered exit in a numeric input field it doesn't raise an error.
             input_ = type_(input_)
             if type_ == str:
-                if input_ not in values[0]: raise
+                if input_ not in values[0]: raise # only check for input_ in values[0] after you know they have entered a string because if type_ == int or float then values will be empty.
             break
-        except Exception:
+        except Exception: # exit() raises SystemExit but except Exception: fixes that for some reason.
             print(error_prompt)
     return input_
 
@@ -29,11 +29,44 @@ def get_events_groups():
     groups = [x[0] for x in cursor.execute("SELECT house||\' \'||gender FROM groups ORDER BY id;").fetchall()]
 
 def format_list(list_):
-    "Formats lists from ['a', 'b', 'c'] to a, b, c"
+    "Formats lists from ['a', 'b', 'c'] to 'a, b, c'"
     return ', '.join(list_).title()
 
+def print_results(results):
+    "Formats and prints results from the database to be displayed to the user."
+    for x in results:
+        print(x) # I will format the results better after I finish the MVP.
+
 def results():
-    pass
+    """
+    Allows users to get data from the database.
+    Users can get the winner of each event, the winner of all events or how many events each house won.
+    """
+    get_events_groups()
+    action = valid_input("Enter the name of an event to find the winner of it, '*' to find the winners of each event or 'overall' to find the overall winner of participation day: ", "Please ensure that you have entered a valid event, '*' or 'overall'", str, events+["*", "overall"])
+    
+    if action in events:
+        event_index = events.index(action)+1
+        results = [list(x) for x in cursor.execute("SELECT e.name AS event, g.house || \" \" || g.gender AS [group], MIN(p.avg_score) AS score FROM events AS e, participations AS p, [groups] AS g INNER JOIN events ON e.id = p.event_id INNER JOIN [groups] ON g.id = p.group_id WHERE e.id = ? GROUP BY [group] ORDER BY score;", (event_index,)).fetchall()]
+        if cursor.execute("SELECT units FROM events WHERE events.id = ?", (event_index,)).fetchall()[0][0] != "seconds":
+            results.reverse()
+
+        print_results()
+
+    elif action == "*":
+        results = [list(x) for x in cursor.execute("SELECT e.name AS event, g.house ||\" \"|| g.gender AS winner, MIN(p.avg_score) AS score, e.units AS units FROM events AS e, [groups] AS g, participations AS p INNER JOIN events ON e.id = p.event_id INNER JOIN [groups] ON g.id = p.group_id WHERE e.units = 'seconds' GROUP BY e.id UNION ALL SELECT e.name AS event, g.house ||\" \"|| g.gender AS winner, MAX(p.avg_score) AS score, e.units AS units FROM events AS e, [groups] AS g, participations AS p INNER JOIN events ON e.id = p.event_id INNER JOIN [groups] ON g.id = p.group_id WHERE e.units != 'seconds' GROUP BY e.id;").fetchall()]
+        
+        print_results()
+
+    elif action == "overall":
+        raw_results = [x[0] for x in cursor.execute("SELECT g.house AS winner, MIN(p.avg_score) AS score FROM events AS e, [groups] as g, participations AS p INNER JOIN events ON e.id = p.event_id INNER JOIN [groups] ON g.id = p.group_id WHERE e.units = 'seconds' GROUP BY e.id UNION ALL SELECT g.house AS winner, MAX(p.avg_score) AS score FROM events AS e, [groups] as g, participations AS p INNER JOIN events ON e.id = p.event_id INNER JOIN [groups] ON g.id = p.group_id WHERE e.units != 'seconds' GROUP BY e.id ORDER BY winner;").fetchall()]
+        raw_results = [[x, raw_results.count(x)] for x in raw_results]
+        results = []
+        [results.append(x) for x in raw_results if x not in results] # remove all similar values in list.
+        results = [[x, 0] for x in [x[0] for x in cursor.execute("SELECT house FROM groups GROUP BY house").fetchall()] if x not in [x[0] for x in results]] + results # add in the other houses if they aren't already in results
+        results.reverse()
+        
+        print_results()
 
 def add_participation():
     "Adds a participation for a certain event and group to the participations table in the database."
